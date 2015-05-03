@@ -11,10 +11,11 @@ reading_interval = 60 # seconds between readings.
 
 # Human readable names for the sensors indexed by unique sensor ID
 locations = {
-  "000005eb8b82" : "Pi",
+  "000005eb8b82" : "Window",
+  "000005e9b365" : "Eaves",
   "0000062ac658" : "Wall",
-  "0000062caad9" : "Window",
-  "000005e9b365" : "ReadyNAS",
+  "0000062caad9" : "Printer",
+  "000005ea107a" : "Pi",
 }
 
 class Time_Period:
@@ -37,6 +38,9 @@ class Time_Period:
             else:
                 print "Unknown type of adjustment : " + self.adjust_type
         return value
+    def get_period_values(self,timestamp):
+        current_time = time.gmtime(timestamp)
+        return self.calc_value(current_time)
 
 stats_periods = {
         "hourly"   : Time_Period("hourly",3,adjust_type="modulo", adjust_value=24) ,
@@ -47,8 +51,51 @@ stats_periods = {
         "minutely" : Time_Period("minutely",4,adjust_type="divide", adjust_value=5) ,
                  }
 
-countstep = 1
 
+def match_sensor_to_loc(sensor):
+    if sensor.id in locations:
+        sensor_name = locations[sensor.id]
+    else:
+        sensor_name = "unk : "  + str(sensor.id)
+    sensor.location = sensor_name
+    return sensor_name
+
+def init_sensor_stats(sensor):
+    sensor.data          = []
+    sensor.max_temp      = {}
+    sensor.min_temp      = {}
+    sensor.avg_temp      = {}
+    for period in stats_periods.keys():
+        reset_sensor_stats(sensor,period)
+
+def reset_sensor_stats(sensor,period):
+    sensor.max_temp[period] = -10000.0
+    sensor.min_temp[period] =  10000.0
+    sensor.avg_temp[period] =      0.0
+
+def set_sensor_max(sensor,period,current_temp):
+    sensor.max_temp[period] = max(sensor.max_temp[period],current_temp)
+
+def set_sensor_min(sensor,period,current_temp):
+    sensor.min_temp[period] = min(sensor.min_temp[period],current_temp)
+
+def set_sensor_avg(sensor,period,current_temp):
+    sensor.avg_temp[period] = ((sensor.avg_temp[period] * (record_count[period]-1)) + current_temp) \
+                              / record_count[period]
+
+def get_all_temps():
+    for period in stats_periods.keys():
+        record_count[period] += 1
+        for sensor in all_sensors:
+            sensor.last_temp = sensor.get_temperature()
+            sensor.data.extend([sensor.last_temp])
+            set_sensor_max(sensor,period,sensor.last_temp)
+            set_sensor_min(sensor,period,sensor.last_temp)
+            set_sensor_avg(sensor,period,sensor.last_temp)
+
+    
+
+countstep = 1
 if len(sys.argv) > 1:
     reading_count = sys.argv[1]
     if reading_count.isdigit():
@@ -73,61 +120,16 @@ output["records"] = open(logfile,"w")
 
 all_sensors = W1ThermSensor.get_available_sensors()
 
-def match_sensor_to_loc(sensor):
-    if sensor.id in locations:
-        sensor_name = locations[sensor.id]
-    else:
-        sensor_name = "unk : "  + str(sensor.id)
-    sensor.location = sensor_name
-    return sensor_name
-
-def init_sensor_stats(sensor):
-    request_time = time.time()
-    for period in stats_periods.keys():
-        period_value = get_period_values(request_time,period)
-        reset_sensor_stats(sensor,period,period_value)
-
-def reset_sensor_stats(sensor,period,new_period_value):
-    sensor.max_temp[period] = -10000.0
-    sensor.min_temp[period] =  10000.0
-    sensor.avg_temp[period] =      0.0
-    sensor.record_count[period] = 0
-    sensor.last_reading[period] = new_period_value
-
-def set_sensor_max(sensor,period,current_temp):
-    sensor.max_temp[period] = max(sensor.max_temp[period],current_temp)
-
-def set_sensor_min(sensor,period,current_temp):
-    sensor.min_temp[period] = min(sensor.min_temp[period],current_temp)
-
-def set_sensor_avg(sensor,period,current_temp):
-    sensor.avg_temp[period] = ((sensor.avg_temp[period] * sensor.record_count[period]) + current_temp) \
-                              / ( sensor.record_count[period] +1 )
-    sensor.record_count[period] += 1
-
-def get_all_temps():
-    for sensor in all_sensors:
-        sensor.last_temp = sensor.get_temperature()
-#        sensor_name = sensor.location
-        for period in stats_periods.keys():
-            set_sensor_max(sensor,period,sensor.last_temp)
-            set_sensor_min(sensor,period,sensor.last_temp)
-            set_sensor_avg(sensor,period,sensor.last_temp)
-
-def get_period_values(timestamp,period):
-    current_time = time.gmtime(timestamp)
-    return stats_periods[period].calc_value(current_time)
+record_count  = {}
+last_reading  = {}
 
 for sensor in all_sensors:
     match_sensor_to_loc(sensor)
-    sensor.max_temp      = {}
-    sensor.min_temp      = {}
-    sensor.avg_temp      = {}
-    sensor.record_count  = {}
-    sensor.last_reading  = {}
     init_sensor_stats(sensor)
 
 for period in stats_periods.keys():
+    record_count[period] = 0
+    last_reading[period] = 0
     output[period].write("%20s |" % " ")
     for sensor in all_sensors:
         output[period].write("%23s |" % sensor.location)
@@ -150,54 +152,55 @@ format_str = "current %4.1f    " + \
              "readings: %5d   "
 
 #for i in range(121):
-i = 0
-while i < reading_count: 
-    i = i + countstep
+counter = 0
+while counter < reading_count: 
+    counter = counter + countstep
     request_time = time.time()
     timestamp = time.strftime("%Y/%m/%d-%H:%M",time.gmtime(request_time))
     get_all_temps()
     
-    print "====== " + time.asctime(time.gmtime(request_time)) + " ==== reading " + str(i) + \
-          " of " + str(reading_count) + " readings. ==== step is : " + str(countstep) + " ============="
+    #print "====== " + time.asctime(time.gmtime(request_time)) + " ==== reading " + str(counter) + \
+    #      " of " + str(reading_count) + " readings. ==== step is : " + str(countstep) + " ============="
     
     output["records"].write ("%20s " % (timestamp))
     
     for sensor in all_sensors:
         # -----   printing to screen   -----
-        print ("%20s : " % sensor.location),
-        for period in ("hourly","daily"):
-            print ( format_str % (sensor.last_temp,
-                                  sensor.max_temp[period],
-                                  sensor.min_temp[period],
-                                  sensor.avg_temp[period],
-                                  sensor.record_count[period]
-                           )) ,
-        print ""
+        #print ("%20s : " % sensor.location),
+        #for period in ("hourly","daily"):
+            #print ( format_str % (sensor.last_temp,
+            #                      sensor.max_temp[period],
+            #                      sensor.min_temp[period],
+            #                      sensor.avg_temp[period],
+            #                      record_count[period]
+            #               )) ,
+        #print ""
         # ----- ! printing to screen   -----
         
         output["records"].write ("%23.1f " % (sensor.last_temp))
     output["records"].write("\n")
     output["records"].flush()
-    print "======================================="
+    #print "======================================="
     
 #=======
     for period in stats_periods.keys():
         write_now = False
-        period_value = get_period_values(request_time,period)
+        period_value = stats_periods[period].get_period_values(request_time)
         data = "%20s |" % (timestamp)
         for sensor in all_sensors:
-            if period_value != sensor.last_reading[period]:
+            if period_value != last_reading[period]:
                 write_now = True
                 data = data + "%7.1f %7.1f %7.1f |" % ( sensor.max_temp[period],
                                                         sensor.min_temp[period],
                                                         sensor.avg_temp[period] )
-                reset_sensor_stats(sensor,period,period_value)
+                reset_sensor_stats(sensor,period)
         if write_now:
             output[period].write("%s\n" % data)
             output[period].flush()
+            record_count[period] = 0
+            last_reading[period] = period_value    
     
-    
-    if not i == reading_count:
+    if not counter == reading_count:
         end_time=time.time()
         delay = reading_interval - ( end_time - request_time )
         time.sleep(delay)
