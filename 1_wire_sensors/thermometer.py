@@ -2,6 +2,8 @@
 
 import sys
 import time
+import os.path
+
 from w1thermsensor import W1ThermSensor
 # To get w1thermsensor :
 # git clone https://github.com/timofurrer/w1thermsensor.git && cd w1thermsensor
@@ -12,10 +14,12 @@ reading_interval = 60 # seconds between readings.
 # Human readable names for the sensors indexed by unique sensor ID
 locations = {
   "000005eb8b82" : "Window",
-  "000005e9b365" : "Eaves",
+  "000005e9b365" : "Spare",
   "0000062ac658" : "Wall",
   "0000062caad9" : "Printer",
   "000005ea107a" : "Pi",
+  "000005fb1de8" : "Eaves",
+  "000005fafeb9" : "Tank",
 }
 
 class Time_Period:
@@ -45,11 +49,16 @@ class Time_Period:
 stats_periods = {
         "hourly"   : Time_Period("hourly",3,adjust_type="modulo", adjust_value=24) ,
         "daily"    : Time_Period("daily",7) ,
-        "weekly"   : Time_Period("weekly",7,adjust_type="divide", adjust_value=7) ,
-        "monthly"  : Time_Period("monthly",1) ,
-        "yearly"   : Time_Period("yearly",0) ,
-        "minutely" : Time_Period("minutely",4,adjust_type="divide", adjust_value=5) ,
                  }
+
+#stats_periods = {
+#        "hourly"   : Time_Period("hourly",3,adjust_type="modulo", adjust_value=24) ,
+#        "daily"    : Time_Period("daily",7) ,
+#        "weekly"   : Time_Period("weekly",7,adjust_type="divide", adjust_value=7) ,
+#        "monthly"  : Time_Period("monthly",1) ,
+#        "yearly"   : Time_Period("yearly",0) ,
+#        "minutely" : Time_Period("minutely",4,adjust_type="divide", adjust_value=5) ,
+#                 }
 
 
 def match_sensor_to_loc(sensor):
@@ -108,15 +117,27 @@ if len(sys.argv) > 1:
 else:
     reading_count = 1
 
-timestamp = time.strftime("%Y%m%d-%H%M")
+file_timestamp = time.strftime("%Y%m%d")
+#file_timestamp = time.strftime("%Y%m%d-%H%M")
 
 output = {}
+new_file = {}
 for period in stats_periods.keys():
-    logfile= timestamp + r"-logfile-" + period + ".txt"
-    output[period] = open(logfile,"w")
+    #logfile= file_timestamp + r"-logfile-" + period + ".txt"
+    logfile=  r"logfile-" + period + ".txt"
+    if ( os.path.exists(logfile) ):
+        new_file[period] = False
+    else:
+        new_file[period] = True
+    output[period] = open(logfile,"a")
 
-logfile = timestamp + "-records_log.txt"
-output["records"] = open(logfile,"w")
+#logfile = file_timestamp + "-records_log.txt"
+logfile =  "records_log.txt"
+if ( os.path.exists(logfile) ):
+    new_file["records"] = False
+else:
+    new_file["records"] = True
+output["records"] = open(logfile,"a")
 
 all_sensors = W1ThermSensor.get_available_sensors()
 
@@ -130,19 +151,21 @@ for sensor in all_sensors:
 for period in stats_periods.keys():
     record_count[period] = 0
     last_reading[period] = 0
-    output[period].write("%20s |" % " ")
-    for sensor in all_sensors:
-        output[period].write("%23s |" % sensor.location)
-    output[period].write("\n")
-    output[period].write("%20s |" % ("time"))
-    for sensor in all_sensors:
-        output[period].write("%7s %7s %7s |" % ("max","min","avg"))
-    output[period].write("\n")
+    if (new_file[period]):
+        output[period].write("%20s |" % " ")
+        for sensor in all_sensors:
+            output[period].write("%23s |" % sensor.location)
+        output[period].write("\n")
+        output[period].write("%20s |" % ("time"))
+        for sensor in all_sensors:
+            output[period].write("%7s %7s %7s |" % ("max","min","avg"))
+        output[period].write("\n")
 
-output["records"].write("%20s |" % ("time"))
-for sensor in all_sensors:
-    output["records"].write("%22s |" % sensor.location)
-output["records"].write("\n")
+if (new_file["records"]):
+    output["records"].write("%20s |" % ("time"))
+    for sensor in all_sensors:
+        output["records"].write("%22s |" % sensor.location)
+    output["records"].write("\n")
 
 
 format_str = "current %4.1f    " + \
