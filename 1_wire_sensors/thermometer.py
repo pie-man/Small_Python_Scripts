@@ -1,23 +1,33 @@
 import time
+from w1thermsensor import W1ThermSensor
+# To get w1thermsensor :
+# git clone https://github.com/timofurrer/w1thermsensor.git && cd w1thermsensor
+# sudo python setup.py install
 
-class Thermometer:
-    '''defines a DS18B20 thermometer'''
-    def __init__(self,name,id):
-        self.name = name
-        self.id = id
-    def read_temp(self):
-        filename = "/sys/bus/w1/devices/" + self.id + "/w1_slave"
-        tempfile = open (filename)
-        fulltext = tempfile.read()
-        tempfile.close()
-        tempdata = fulltext.split("\n")[1].split(" ")[9]
-        temperature = float(tempdata[2:])
-        temperature = temperature / 1000
-        return temperature
+locations = {
+  "000005eb8b82" : "Pi",
+  "0000062ac658" : "Wall",
+  "0000062caad9" : "Window",
+}
 
-therm1 = Thermometer("Window","28-0000062caad9")
-therm2 = Thermometer("wall",  "28-0000062ac658")
-therm3 = Thermometer("Pi",    "28-000005eb8b82")
+logfile=r"logfile.txt"
+output = open(logfile,"w")
+
+def match_sensor_to_loc(sensor_id):
+    if sensor_id in locations:
+        return locations[sensor_id]
+    else:
+        return "unknown location"
+
+all_sensors = W1ThermSensor.get_available_sensors()
+for sensor in all_sensors:
+    sensor.location = match_sensor_to_loc(sensor.id)
+    print("Sensor %s @ location %s has temperature %.2f" % (sensor.id, sensor.location, sensor.get_temperature()))
+    output.write("%s " % sensor.location)
+
+output.write("\n")
+
+
 
 #for i in range(121):
 i = 0
@@ -25,9 +35,11 @@ while 1:
     i = i + 1
     print "==========\nstep "+str(i)
     
-    print ("{:10} {:3.1f}".format(therm1.name, therm1.read_temp()))
-    print ("{:10} {:3.1f}".format(therm2.name, therm2.read_temp()))
-    print ("{:10} {:3.1f}".format(therm3.name, therm3.read_temp()))
+    for sensor in all_sensors:
+        print ("%20s : %3.1f" % (sensor.location, sensor.get_temperature()))
+        output.write ("%6.2f " % sensor.get_temperature())
+    output.write("\n")
+    output.flush()
     time.sleep(15)
 
-
+close(output)
