@@ -8,7 +8,7 @@ import Adafruit_GPIO.SPI as SPI
  
  
 # Configure the count of pixels:
-PIXEL_COUNT = 32
+PIXEL_COUNT = 50
  
 # Alternatively specify a hardware SPI connection on /dev/spidev0.0:
 SPI_PORT   = 0
@@ -182,7 +182,7 @@ if __name__ == "__main__":
  
     brightness_decrease(pixels)
     
-    appear_from_back(pixels)
+    appear_from_back(pixels, color=(110,0,125))
 
     #for i in range(3):
     #    blink_color(pixels, blink_times = 1, color=(255, 0, 0))
@@ -195,8 +195,9 @@ if __name__ == "__main__":
 
     rainbow_cycle_successive(pixels, wait=0.1)
     rainbow_cycle(pixels, wait=0.01)
-    fade_to_black(pixels, wait=0.01, steps=25):
+    fade_to_black(pixels, wait=0.1, steps=35)
     time.sleep(2)
     rainbow_cycle(pixels, wait=0.01)
-    burn_out(pixels, wait=0.01, steps=25):
-    fade_to_black(pixels, wait=0.01, steps=25):
+    burn_out(pixels, wait=0.1, steps=25)
+    time.sleep(3)
+    fade_to_black(pixels, wait=0.01, steps=25)
