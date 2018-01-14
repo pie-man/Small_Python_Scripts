@@ -82,32 +82,14 @@ def brightness_decrease(pixels, wait=0.01, step=1):
         if wait > 0:
             time.sleep(wait)
  
-def fade_to_black(pixels, wait=0.01, steps=25):
-    old_state = []
+def fade_to_color(pixels, color=(0, 0, 0), wait=0.01, steps=25):
     new_state = []
     for i in range(pixels.count()):
-    #for i in range(pixels):
-        old_state.append(pixels.get_pixel_rgb(i))
-        #old_state.append(wheel(int((255//10.0)* i)))
-        new_state.append((0, 0, 0))
-    #fade_to_state(pixels, new_state, wait, steps)
-    for step in range(steps):
-        scale_out = int(100*( steps - (step + 1.0) ) / steps)
-        scale_in  = 100 - scale_out
-        for i in range(pixels.count()):
-        #for i in range(pixels):
-            old_r, old_g, old_b = old_state[i]
-            new_r, new_g, new_b = new_state[i]
-            cur_r, cur_g, cur_b = (
-                   ((old_r * scale_out + new_r * scale_in) // 100) ,
-                   ((old_g * scale_out + new_g * scale_in) // 100) ,
-                   ((old_b * scale_out + new_b * scale_in) // 100) )
-        #print("step {0:3d} : r{1:3d} g{2:3d} b{3:3d}".format(step, cur_r, cur_g, cur_b))
-            pixels.set_pixel(i, Adafruit_WS2801.RGB_to_color(
-                                                cur_r, cur_g, cur_b ))
-        pixels.show()
-        if wait > 0:
-            time.sleep(wait)
+        new_state.append(color)
+    fade_to_state(pixels, new_state, wait, steps)
+ 
+def fade_to_black(pixels, wait=0.01, steps=25):
+    fade_to_state(pixels, color=(0, 0, 0), wait, steps)
  
 def burn_out(pixels, wait=0.01, steps=25):
     new_state = []
