@@ -152,6 +152,23 @@ def appear_from_back(pixels, color=(255, 0, 0)):
             pixels.set_pixel(j, Adafruit_WS2801.RGB_to_color( color[0], color[1], color[2] ))
             pixels.show()
             time.sleep(0.02)
+def ping_pong(pixels, color1=(110, 110, 0), color2=(0, 0, 0), wait=0.05, repeat=5):
+    pos = 0
+    pixels.clear()
+    old_lit=0
+    for count in range(repeat):
+        for i in range(pixels.count()):
+            pixels.set_pixel(old_lit, Adafruit_WS2801.RGB_to_color( *color2 ))
+            pixels.set_pixel(i, Adafruit_WS2801.RGB_to_color( *color1 ))
+            old_lit = i
+            pixels.show()
+            time.sleep(wait)
+        for i in reversed(range(pixels.count())):
+            pixels.set_pixel(old_lit, Adafruit_WS2801.RGB_to_color( *color2 ))
+            pixels.set_pixel(i, Adafruit_WS2801.RGB_to_color( *color1 ))
+            old_lit = i
+            pixels.show()
+            time.sleep(wait)
             
  
 if __name__ == "__main__":
@@ -164,22 +181,24 @@ if __name__ == "__main__":
  
     brightness_decrease(pixels)
     
-    appear_from_back(pixels, color=(110,0,125))
+    appear_from_back(pixels, color=(100,0,125))
 
-    #for i in range(3):
-    #    blink_color(pixels, blink_times = 1, color=(255, 0, 0))
-    #    blink_color(pixels, blink_times = 1, color=(0, 255, 0))
-    #    blink_color(pixels, blink_times = 1, color=(0, 0, 255))
+    for i in range(3):
+        blink_color(pixels, blink_times = 1, color=(100, 0, 0))
+        blink_color(pixels, blink_times = 1, color=(0, 100, 0))
+        blink_color(pixels, blink_times = 1, color=(0, 0, 100))
 
     rainbow_colors(pixels)
 
     brightness_decrease(pixels)
 
+    ping_pong(pixels)
+    ping_pong(pixels, color1=(110,0,110), color2=(0,110,0))
     rainbow_cycle_successive(pixels, wait=0.1)
-    rainbow_cycle(pixels, wait=0.01)
-    fade_to_black(pixels, wait=0.1, steps=35)
+    rainbow_cycle(pixels, wait=0.1)
+    fade_to_black(pixels, wait=0.1, steps=75)
     time.sleep(2)
     rainbow_cycle(pixels, wait=0.01)
     burn_out(pixels, wait=0.1, steps=25)
     time.sleep(3)
-    fade_to_black(pixels, wait=0.01, steps=25)
+    fade_to_black(pixels, wait=0.1, steps=25)
