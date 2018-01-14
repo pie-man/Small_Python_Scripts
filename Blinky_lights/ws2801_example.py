@@ -62,6 +62,16 @@ def rainbow_cycle(pixels, wait=0.005):
         if wait > 0:
             time.sleep(wait)
  
+def mirror_rainbow_cycle(pixels, wait=0.005):
+    for j in range(1024): # two cycles of all 256 colors in the wheel
+        len_pixels = pixels.count()
+        for i in range(len_pixels/2):
+            pixels.set_pixel(i, wheel(((i * 256 // (len_pixels//2)) + j) % 256) )
+            pixels.set_pixel((len_pixels-(i+1)), wheel(((i * 256 // (len_pixels//2)) + j) % 256) )
+        pixels.show()
+        if wait > 0:
+            time.sleep(wait)
+ 
 def rainbow_colors(pixels, wait=0.05):
     for j in range(256): # one cycle of all 256 colors in the wheel
         for i in range(pixels.count()):
@@ -89,7 +99,7 @@ def fade_to_color(pixels, color=(0, 0, 0), wait=0.01, steps=25):
     fade_to_state(pixels, new_state, wait, steps)
  
 def fade_to_black(pixels, wait=0.01, steps=25):
-    fade_to_state(pixels, color=(0, 0, 0), wait, steps)
+    fade_to_color(pixels, color=(0, 0, 0), wait=wait, steps=steps)
  
 def burn_out(pixels, wait=0.01, steps=25):
     new_state = []
@@ -152,7 +162,7 @@ def appear_from_back(pixels, color=(255, 0, 0)):
             pixels.set_pixel(j, Adafruit_WS2801.RGB_to_color( color[0], color[1], color[2] ))
             pixels.show()
             time.sleep(0.02)
-def ping_pong(pixels, color1=(110, 110, 0), color2=(0, 0, 0), wait=0.05, repeat=5):
+def ping_pong(pixels, color1=(110, 50, 0), color2=(0, 0, 0), wait=0.05, repeat=5):
     pos = 0
     pixels.clear()
     old_lit=0
@@ -181,24 +191,25 @@ if __name__ == "__main__":
  
     brightness_decrease(pixels)
     
-    appear_from_back(pixels, color=(100,0,125))
+    mirror_rainbow_cycle(pixels, wait=0.01)
+    #appear_from_back(pixels, color=(100,0,125))
 
-    for i in range(3):
-        blink_color(pixels, blink_times = 1, color=(100, 0, 0))
-        blink_color(pixels, blink_times = 1, color=(0, 100, 0))
-        blink_color(pixels, blink_times = 1, color=(0, 0, 100))
+    #for i in range(3):
+    #    blink_color(pixels, blink_times = 1, color=(100, 0, 0))
+    #    blink_color(pixels, blink_times = 1, color=(0, 100, 0))
+    #    blink_color(pixels, blink_times = 1, color=(0, 0, 100))
 
-    rainbow_colors(pixels)
+    #rainbow_colors(pixels)
 
-    brightness_decrease(pixels)
+    #brightness_decrease(pixels)
 
-    ping_pong(pixels)
-    ping_pong(pixels, color1=(110,0,110), color2=(0,110,0))
-    rainbow_cycle_successive(pixels, wait=0.1)
-    rainbow_cycle(pixels, wait=0.1)
-    fade_to_black(pixels, wait=0.1, steps=75)
-    time.sleep(2)
-    rainbow_cycle(pixels, wait=0.01)
-    burn_out(pixels, wait=0.1, steps=25)
+    #ping_pong(pixels)
+    #ping_pong(pixels, color1=(110,0,110), color2=(100,50,0))
+    #rainbow_cycle_successive(pixels, wait=0.1)
+    #rainbow_cycle(pixels, wait=0.1)
+    #fade_to_black(pixels, wait=0.1, steps=75)
+    #time.sleep(2)
+    #rainbow_cycle(pixels, wait=0.01)
+    #burn_out(pixels, wait=0.1, steps=25)
     time.sleep(3)
     fade_to_black(pixels, wait=0.1, steps=25)
