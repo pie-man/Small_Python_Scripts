@@ -8,14 +8,65 @@ import Adafruit_GPIO.SPI as SPI
  
  
 # Configure the count of pixels:
-PIXEL_COUNT = 50
+PIXEL_COUNT = 100
  
 # Alternatively specify a hardware SPI connection on /dev/spidev0.0:
 SPI_PORT   = 0
 SPI_DEVICE = 0
-pixels = Adafruit_WS2801.WS2801Pixels(PIXEL_COUNT, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE), gpio=GPIO)
+pixels = Adafruit_WS2801.WS2801Pixels(PIXEL_COUNT,
+                                 spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE), gpio=GPIO)
  
+class Pixel_Section:
+    def __init__(self, leds, offset, length):
+        max_pixels=leds.count()
+        if offset > max_pixels:
+            print("Eror: offste too far")
+            offset=0
+        if offset + length > max_pixels :
+            print("Error : not enough pixels for that....")
+            length = max_pixels - offset
+        self.offset = offset
+        self.length = length
+        self.pixels = leds
+
+    def rainbow_cycle_successive(self, steps=10, spread=256):
+        clusters = pixels_by_step(self.length, steps)
+        for cluster in clusters:
+            # tricky math!
+            # we use each pixel as a fraction of the full spread-color wheel
+            # (thats the i * spread / slef.length part)
+            # Then add in cluster which makes the colors go around per pixel
+            # the % spread is to make the wheel cycle around
+            for i in cluster:
+                pixel_no=i+self.offset
+                print("pixel no. = {0:3d}".format(pixel_no))
+                self.pixels.set_pixel(pixel_no, wheel(
+                                        (i * spread // self.length) % spread) )
+            yield
  
+    def rainbow_cycle(self, steps=10, spread=256):
+        " light up the full block of pixels and then cycle the colours around"
+        # cycle through all spread colors in the wheel
+        for j in range(0,spread,(spread/(steps-1))):
+            for i in range(self.length):
+                colour = wheel(((i * spread // self.length) + j) % spread)
+                self.pixels.set_pixel(i+self.offset, colour )
+            yield # Return 'control' to main program somewhere
+
+def pixels_by_step(count,steps):
+    fred=[int((float(count)/steps)*(x)) for x in range(steps)]
+    fred.append(count)
+    print (fred)
+    list_out=[]
+    for i in range(len(fred)-1):
+        if fred[i] == fred[i+1]:
+            dave = [fred[i]]
+        else:
+            dave= range(fred[i],fred[i+1])
+        print("iter {0:3d} : {1:}".format(i, dave))
+        list_out.append(dave)
+    return list_out
+
 # Define the wheel function to interpolate between different hues.
 # This function defines 255 separate colours
 def wheel(pos):
@@ -45,15 +96,25 @@ def wheel2(pos):
 # Define rainbow cycle function to do a cycle of all hues.
 def rainbow_cycle_successive(pixels, wait=0.1):
     for i in range(pixels.count()):
-        # tricky math! we use each pixel as a fraction of the full 96-color wheel
+        # tricky math! we use each pixel as a fraction of the full 256-color wheel
         # (thats the i / strip.numPixels() part)
         # Then add in j which makes the colors go around per pixel
-        # the % 96 is to make the wheel cycle around
+        # the % 256 is to make the wheel cycle around
         pixels.set_pixel(i, wheel(((i * 256 // pixels.count())) % 256) )
         pixels.show()
         if wait > 0:
             time.sleep(wait)
  
+def go_out_successive(pixels, wait=0.1, reverse=False):
+    order = range(pixels.count())
+    if reverse:
+        order.reverse()
+    for i in order:
+        pixels.set_pixel(i, Adafruit_WS2801.RGB_to_color(0, 0, 0) )
+        pixels.show()
+        if wait > 0:
+            time.sleep(wait)
+
 def rainbow_cycle(pixels, wait=0.005):
     for j in range(256): # one cycle of all 256 colors in the wheel
         for i in range(pixels.count()):
@@ -191,25 +252,54 @@ if __name__ == "__main__":
  
     brightness_decrease(pixels)
     
-    mirror_rainbow_cycle(pixels, wait=0.01)
-    #appear_from_back(pixels, color=(100,0,125))
+    rainbow_cycle_successive(pixels, wait=0.1)
+    rainbow_cycle(pixels, wait=0.01)
+ 
+    go_out_successive(pixels)
+    
+    rainbow_cycle_successive(pixels, wait=0.1)
+    rainbow_cycle(pixels, wait=0.01)
+ 
+    go_out_successive(pixels, reverse=True)
+    
+    #mirror_rainbow_cycle(pixels, wait=0.01)
+    ##appear_from_back(pixels, color=(100,0,125))
 
-    #for i in range(3):
-    #    blink_color(pixels, blink_times = 1, color=(100, 0, 0))
-    #    blink_color(pixels, blink_times = 1, color=(0, 100, 0))
-    #    blink_color(pixels, blink_times = 1, color=(0, 0, 100))
+    ##for i in range(3):
+    ##    blink_color(pixels, blink_times = 1, color=(100, 0, 0))
+    ##    blink_color(pixels, blink_times = 1, color=(0, 100, 0))
+    ##    blink_color(pixels, blink_times = 1, color=(0, 0, 100))
 
-    #rainbow_colors(pixels)
+    ##rainbow_colors(pixels)
 
-    #brightness_decrease(pixels)
-
-    #ping_pong(pixels)
-    #ping_pong(pixels, color1=(110,0,110), color2=(100,50,0))
+    ##brightness_decrease(pixels)
+    #set_A=[]
+    ##for i in range(0,pixels.count(),4):
+    ##    print("looking at counter {0:d}".format(i))
+    ##    set_A.append(i)
+    ##ping_pong(pixels)
+    ##ping_pong(pixels, color1=(110,0,110), color2=(100,50,0))
     #rainbow_cycle_successive(pixels, wait=0.1)
     #rainbow_cycle(pixels, wait=0.1)
     #fade_to_black(pixels, wait=0.1, steps=75)
     #time.sleep(2)
-    #rainbow_cycle(pixels, wait=0.01)
-    #burn_out(pixels, wait=0.1, steps=25)
+    rainbow_cycle(pixels, wait=0.01)
+    burn_out(pixels, wait=0.1, steps=25)
     time.sleep(3)
     fade_to_black(pixels, wait=0.1, steps=25)
+    subset1 = Pixel_Section(pixels, 40, 20)
+    subset2 = Pixel_Section(pixels, 0, 20)
+    subset3 = Pixel_Section(pixels, 80, 20)
+    run_for = 60
+    set1_do = subset1.rainbow_cycle(steps=run_for)
+    set2_do = subset2.rainbow_cycle_successive(steps=run_for)
+    set3_do = subset3.rainbow_cycle_successive(steps=run_for)
+    for i in range(run_for):
+        print(i)
+        set1_do.next()
+        set3_do.next()
+        set2_do.next()
+        pixels.show()
+        time.sleep(.5)
+    time.sleep(5)
+    fade_to_black(pixels, wait=0.1, steps=50)
