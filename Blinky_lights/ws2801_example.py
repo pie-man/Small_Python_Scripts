@@ -94,8 +94,11 @@ def wheel2(pos):
         return Adafruit_WS2801.RGB_to_color(0, pos, 255 - pos)
  
 # Define rainbow cycle function to do a cycle of all hues.
-def rainbow_cycle_successive(pixels, wait=0.1):
-    for i in range(pixels.count()):
+def rainbow_cycle_successive(pixels, wait=0.1, reverse=False):
+    order = range(pixels.count())
+    if reverse:
+        order.reverse()
+    for i in order:
         # tricky math! we use each pixel as a fraction of the full 256-color wheel
         # (thats the i / strip.numPixels() part)
         # Then add in j which makes the colors go around per pixel
