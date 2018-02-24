@@ -29,8 +29,10 @@ class Pixel_Section:
         self.length = length
         self.pixels = leds
 
-    def rainbow_cycle_successive(self, steps=10, spread=256):
+    def rainbow_cycle_successive(self, steps=10, spread=256, reverse=False):
         clusters = pixels_by_step(self.length, steps)
+        if reverse:
+            clusters.revers()
         for cluster in clusters:
             # tricky math!
             # we use each pixel as a fraction of the full spread-color wheel
@@ -44,14 +46,28 @@ class Pixel_Section:
                                         (i * spread // self.length) % spread) )
             yield
  
-    def rainbow_cycle(self, steps=10, spread=256):
+    def rainbow_cycle(self, steps=10, spread=256, reverse=False):
         " light up the full block of pixels and then cycle the colours around"
         # cycle through all spread colors in the wheel
-        for j in range(0,spread,(spread/(steps-1))):
+        order=range(steps)
+        if reverse:
+            order.reverse()
+        for j in order:
+            subtle_j = int((j*spread) / float(steps-1))
             for i in range(self.length):
-                colour = wheel(((i * spread // self.length) + j) % spread)
+                colour = wheel(((i * spread // self.length) + subtle_j) % spread)
                 self.pixels.set_pixel(i+self.offset, colour )
             yield # Return 'control' to main program somewhere
+
+    def go_out_successive(self, steps=10, reverse=False):
+        clusters = pixels_by_step(self.length, steps)
+        if reverse:
+            clusters.reverse()
+        for cluster in clusters:
+            for i in cluster:
+                pixels.set_pixel(i+self.offset, Adafruit_WS2801.RGB_to_color(0, 0, 0) )
+                pixels.show()
+            yield
 
 def pixels_by_step(count,steps):
     fred=[int((float(count)/steps)*(x)) for x in range(steps)]
@@ -250,20 +266,20 @@ if __name__ == "__main__":
     pixels.clear()
     pixels.show()  # Make sure to call show() after changing any pixels!
  
-    rainbow_cycle_successive(pixels, wait=0.1)
-    rainbow_cycle(pixels, wait=0.01)
+    #rainbow_cycle_successive(pixels, wait=0.1)
+    #rainbow_cycle(pixels, wait=0.01)
  
-    brightness_decrease(pixels)
-    
-    rainbow_cycle_successive(pixels, wait=0.1)
-    rainbow_cycle(pixels, wait=0.01)
+    #brightness_decrease(pixels)
+    #
+    #rainbow_cycle_successive(pixels, wait=0.1)
+    #rainbow_cycle(pixels, wait=0.01)
  
-    go_out_successive(pixels)
-    
-    rainbow_cycle_successive(pixels, wait=0.1)
-    rainbow_cycle(pixels, wait=0.01)
+    #go_out_successive(pixels)
+    #
+    #rainbow_cycle_successive(pixels, wait=0.1)
+    #rainbow_cycle(pixels, wait=0.01)
  
-    go_out_successive(pixels, reverse=True)
+    #go_out_successive(pixels, reverse=True)
     
     #mirror_rainbow_cycle(pixels, wait=0.01)
     ##appear_from_back(pixels, color=(100,0,125))
@@ -293,16 +309,36 @@ if __name__ == "__main__":
     subset1 = Pixel_Section(pixels, 40, 20)
     subset2 = Pixel_Section(pixels, 0, 20)
     subset3 = Pixel_Section(pixels, 80, 20)
-    run_for = 60
+    subset4 = Pixel_Section(pixels, 20, 20)
+    subset5 = Pixel_Section(pixels, 60, 20)
+    run_for = 360
     set1_do = subset1.rainbow_cycle(steps=run_for)
     set2_do = subset2.rainbow_cycle_successive(steps=run_for)
-    set3_do = subset3.rainbow_cycle_successive(steps=run_for)
+    set3_do = subset3.rainbow_cycle_successive(steps=run_for, reverse=True)
     for i in range(run_for):
         print(i)
         set1_do.next()
         set3_do.next()
         set2_do.next()
         pixels.show()
-        time.sleep(.5)
+        time.sleep(.05)
     time.sleep(5)
     fade_to_black(pixels, wait=0.1, steps=50)
+    run_for = 360
+    set1_do = subset4.rainbow_cycle(steps=run_for)
+    set2_do = subset5.rainbow_cycle(steps=run_for, reverse=True)
+    for i in range(run_for):
+        print(i)
+        set1_do.next()
+        set2_do.next()
+        pixels.show()
+        time.sleep(.05)
+    run_for = 360
+    set1_do = subset5.go_out_successive(steps=run_for, reverse=True)
+    set2_do = subset4.go_out_successive(steps=run_for)
+    for i in range(run_for):
+        print(i)
+        set1_do.next()
+        set2_do.next()
+        pixels.show()
+        time.sleep(.05)
