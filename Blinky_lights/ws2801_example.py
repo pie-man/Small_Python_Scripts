@@ -32,7 +32,7 @@ class Pixel_Section:
     def rainbow_cycle_successive(self, steps=10, spread=256, reverse=False):
         clusters = pixels_by_step(self.length, steps)
         if reverse:
-            clusters.revers()
+            clusters.reverse()
         for cluster in clusters:
             # tricky math!
             # we use each pixel as a fraction of the full spread-color wheel
@@ -41,9 +41,9 @@ class Pixel_Section:
             # the % spread is to make the wheel cycle around
             for i in cluster:
                 pixel_no=i+self.offset
-                print("pixel no. = {0:3d}".format(pixel_no))
-                self.pixels.set_pixel(pixel_no, wheel(
-                                        (i * spread // self.length) % spread) )
+                location = (i * spread // self.length) % spread
+                print("pixel no. = {0:3d} position {1:3d}".format(pixel_no, location))
+                self.pixels.set_pixel(pixel_no, wheel(location) )
             yield
  
     def rainbow_cycle(self, steps=10, spread=256, reverse=False):
@@ -55,9 +55,22 @@ class Pixel_Section:
         for j in order:
             subtle_j = int((j*spread) / float(steps-1))
             for i in range(self.length):
+                location = ((i * spread // self.length) +subtle_j )% spread
+                print("pixel no. = {0:3d} colour {1:3d}".format(i+self.offset, location))
                 colour = wheel(((i * spread // self.length) + subtle_j) % spread)
+                print("pixel no. = {0:3d} colour {1:}".format(i+self.offset, colour))
                 self.pixels.set_pixel(i+self.offset, colour )
             yield # Return 'control' to main program somewhere
+
+    def light_up_successive(self, steps=10, colour=(127,127,127), reverse=False):
+        clusters = pixels_by_step(self.length, steps)
+        if reverse:
+            clusters.reverse()
+        for cluster in clusters:
+            for i in cluster:
+                pixels.set_pixel(i+self.offset, Adafruit_WS2801.RGB_to_color(colour[0],colour[1],colour[2]) )
+                pixels.show()
+            yield
 
     def go_out_successive(self, steps=10, reverse=False):
         clusters = pixels_by_step(self.length, steps)
@@ -97,17 +110,18 @@ def wheel(pos):
         return Adafruit_WS2801.RGB_to_color(0, pos * 3, 255 - pos * 3)
  
 # Define an alternative function to interpolate between different hues.
-# This function defines 765 separate colours
-def wheel2(pos):
-    pos = pos % 765
-    if pos < 255:
-        return Adafruit_WS2801.RGB_to_color(pos, 255 - pos, 0)
-    elif pos < 505:
-        pos -= 255
-        return Adafruit_WS2801.RGB_to_color(255 - pos, 0, pos)
+# This function defines 'spread' separate colours
+def wheel2(pos, spread):
+    pos = pos % spread
+    band = spread/3.0
+    if pos < band:
+        return Adafruit_WS2801.RGB_to_color(pos, int(band - pos), 0)
+    elif pos < (2 * band):
+        pos -= int(band)
+        return Adafruit_WS2801.RGB_to_color(int(band - pos), 0, pos)
     else:
-        pos -= 505
-        return Adafruit_WS2801.RGB_to_color(0, pos, 255 - pos)
+        pos -= int(2 * band)
+        return Adafruit_WS2801.RGB_to_color(0, pos, int(band - pos))
  
 # Define rainbow cycle function to do a cycle of all hues.
 def rainbow_cycle_successive(pixels, wait=0.1, reverse=False):
@@ -306,39 +320,67 @@ if __name__ == "__main__":
     burn_out(pixels, wait=0.1, steps=25)
     time.sleep(3)
     fade_to_black(pixels, wait=0.1, steps=25)
-    subset1 = Pixel_Section(pixels, 40, 20)
-    subset2 = Pixel_Section(pixels, 0, 20)
-    subset3 = Pixel_Section(pixels, 80, 20)
-    subset4 = Pixel_Section(pixels, 20, 20)
-    subset5 = Pixel_Section(pixels, 60, 20)
-    run_for = 360
-    set1_do = subset1.rainbow_cycle(steps=run_for)
-    set2_do = subset2.rainbow_cycle_successive(steps=run_for)
-    set3_do = subset3.rainbow_cycle_successive(steps=run_for, reverse=True)
+    #subset1 = Pixel_Section(pixels, 0, 20)
+    #subset2 = Pixel_Section(pixels, 20, 20)
+    #subset3 = Pixel_Section(pixels, 40, 20)
+    #subset4 = Pixel_Section(pixels, 60, 20)
+    #subset5 = Pixel_Section(pixels, 80, 20)
+    #run_for = 360
+    #set1_do = subset3.rainbow_cycle(steps=run_for)
+    #set2_do = subset1.rainbow_cycle_successive(steps=run_for)
+    #set3_do = subset5.rainbow_cycle_successive(steps=run_for, reverse=True)
+    #for i in range(run_for):
+    #    print(i)
+    #    set1_do.next()
+    #    set3_do.next()
+    #    set2_do.next()
+    #    pixels.show()
+    #    time.sleep(.05)
+    #time.sleep(5)
+    #fade_to_black(pixels, wait=0.1, steps=50)
+    #run_for = 360
+    #set1_do = subset2.rainbow_cycle(steps=run_for)
+    #set2_do = subset4.rainbow_cycle(steps=run_for, reverse=True)
+    #for i in range(run_for):
+    #    print(i)
+    #    set1_do.next()
+    #    set2_do.next()
+    #    pixels.show()
+    #    time.sleep(.05)
+    #run_for = 360
+    #set1_do = subset4.go_out_successive(steps=run_for, reverse=True)
+    #set2_do = subset2.go_out_successive(steps=run_for)
+    #for i in range(run_for):
+    #    print(i)
+    #    set1_do.next()
+    #    set2_do.next()
+    #    pixels.show()
+    #    time.sleep(.05)
+    #run_for=360
+    #set1_do = subset1.light_up_successive(steps=run_for, colour=(200,0,200), reverse=True)
+    #set2_do = subset2.light_up_successive(steps=run_for, colour=(200,0,200), reverse=False)
+    #set3_do = subset3.rainbow_cycle(steps=run_for, reverse=True)
+    #set4_do = subset4.light_up_successive(steps=run_for, colour=(200,0,200), reverse=True)
+    #set5_do = subset5.light_up_successive(steps=run_for, colour=(200,0,200), reverse=False)
+    #for i in range(run_for):
+    #    print(i)
+    #    set1_do.next()
+    #    set2_do.next()
+    #    set3_do.next()
+    #    set4_do.next()
+    #    set5_do.next()
+    #    pixels.show()
+    #    time.sleep(.05)
+
+    run_for=360
+    fade_to_black(pixels, wait=0.1, steps=125)
+    subset6 = Pixel_Section(pixels, 98, 2)
+    subset7 = Pixel_Section(pixels, 95, 2)
+    set6_do = subset6.rainbow_cycle(steps=run_for)
+    set7_do = subset7.rainbow_cycle(steps=run_for, reverse=True)
     for i in range(run_for):
         print(i)
-        set1_do.next()
-        set3_do.next()
-        set2_do.next()
-        pixels.show()
-        time.sleep(.05)
-    time.sleep(5)
-    fade_to_black(pixels, wait=0.1, steps=50)
-    run_for = 360
-    set1_do = subset4.rainbow_cycle(steps=run_for)
-    set2_do = subset5.rainbow_cycle(steps=run_for, reverse=True)
-    for i in range(run_for):
-        print(i)
-        set1_do.next()
-        set2_do.next()
-        pixels.show()
-        time.sleep(.05)
-    run_for = 360
-    set1_do = subset5.go_out_successive(steps=run_for, reverse=True)
-    set2_do = subset4.go_out_successive(steps=run_for)
-    for i in range(run_for):
-        print(i)
-        set1_do.next()
-        set2_do.next()
+        set6_do.next()
+        set7_do.next()
         pixels.show()
         time.sleep(.05)
