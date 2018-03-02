@@ -17,17 +17,20 @@ pixels = Adafruit_WS2801.WS2801Pixels(PIXEL_COUNT,
                                  spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE), gpio=GPIO)
  
 class Pixel_Section:
-    def __init__(self, leds, offset, length):
+    def __init__(self, leds, offset, length, step=1):
         max_pixels=leds.count()
         if offset > max_pixels:
-            print("Eror: offste too far")
+            print("Eror: offset too far")
             offset=0
-        if offset + length > max_pixels :
+        string_length = length * step
+        if offset + string_length > max_pixels :
             print("Error : not enough pixels for that....")
-            length = max_pixels - offset
+            string_length = max_pixels - offset
+            length = string_length // step
         self.offset = offset
         self.length = length
         self.pixels = leds
+        self.index = [x + offset for x in range(0,string_length,step)]
 
     def rainbow_cycle_successive(self, steps=10, 
                                  full_circle=256, reverse=False):
@@ -59,7 +62,7 @@ class Pixel_Section:
                     reverse=reverse)
             for i in range(self.length):
                 colour = wheel2(pixel_positions[i], spread=full_wheel)
-                self.pixels.set_pixel(i+self.offset, colour )
+                self.pixels.set_pixel(self.index[i], colour )
             yield # Return 'control' to main program somewhere
 
     def light_up_successive(self, steps=10, colour=(127,127,127), reverse=False):
@@ -68,7 +71,10 @@ class Pixel_Section:
             clusters.reverse()
         for cluster in clusters:
             for i in cluster:
-                pixels.set_pixel(i+self.offset, Adafruit_WS2801.RGB_to_color(colour[0],colour[1],colour[2]) )
+                #pixels.set_pixel(i+self.offset, Adafruit_WS2801.RGB_to_color(colour[0],colour[1],colour[2]) )
+                pixel_colour = Adafruit_WS2801.RGB_to_color(colour[0],
+                        colour[1],colour[2])
+                pixels.set_pixel(self.index[i], pixel_colour)
                 pixels.show()
             yield
 
@@ -396,10 +402,11 @@ if __name__ == "__main__":
         set7_do.next()
         pixels.show()
         time.sleep(.05)
+    run_for=360
     set6_do = subset6.rainbow_cycle(steps=run_for, full_wheel=120, arc_span=120, laps=3)
     set7_do = subset7.rainbow_cycle(steps=run_for, full_wheel=120, arc_span=120, laps=3, reverse=True)
-    set8_do = subset8.rainbow_cycle(steps=run_for, full_wheel=120, arc_span=120, laps=3)
-    set9_do = subset9.rainbow_cycle(steps=run_for, full_wheel=120, arc_span=120, laps=3, reverse=True)
+    set8_do = subset8.rainbow_cycle(steps=run_for, full_wheel=120, arc_span=120, laps=6)
+    set9_do = subset9.rainbow_cycle(steps=run_for, full_wheel=120, arc_span=120, laps=6, reverse=True)
     for i in range(run_for):
         print(i)
         set6_do.next()
@@ -407,4 +414,30 @@ if __name__ == "__main__":
         set8_do.next()
         set9_do.next()
         pixels.show()
-        time.sleep(.05)
+        time.sleep(.075)
+    run_for=15
+    set8_do = subset8.light_up_successive(steps=run_for )
+    set9_do = subset9.light_up_successive(steps=run_for, reverse=True)
+    for i in range(run_for):
+        print(i)
+        set8_do.next()
+        set9_do.next()
+        pixels.show()
+        time.sleep(1)
+    run_for=21
+    subset6 = Pixel_Section(pixels, 30, 10, step=2)
+    subset7 = Pixel_Section(pixels, 50, 10, step=2)
+    subset8 = Pixel_Section(pixels, 31, 10, step=2)
+    subset9 = Pixel_Section(pixels, 51, 10, step=2)
+    set6_do = subset8.light_up_successive(steps=run_for, colour=(0,0,200))
+    set7_do = subset8.light_up_successive(steps=run_for, colour=(0,0,20))
+    set8_do = subset9.light_up_successive(steps=run_for, colour=(200,0,0), reverse=True)
+    set9_do = subset9.light_up_successive(steps=run_for, colour=(200,0,0), reverse=True)
+    for i in range(run_for):
+        print(i)
+        set6_do.next()
+        set7_do.next()
+        set8_do.next()
+        set9_do.next()
+        pixels.show()
+        time.sleep(2)
