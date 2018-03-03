@@ -52,8 +52,8 @@ class Pixel_Section:
                 #pixel_no=i+self.offset
                 location = pixel_locations[i]
                 colour = wheel2(location, spread=full_wheel)
-                print("pixel no. = {0:3d} position {1:3d}".format(pixel_no, location))
-                self.pixels.set_pixel(self.index(i), colour )
+                print("pixel no. = {0:3d} position {1:3d}".format(self.index[i], location))
+                self.pixels.set_pixel(self.index[i], colour )
             yield
             count += 1
  
@@ -85,7 +85,7 @@ class Pixel_Section:
             yield
 
     def go_out_successive(self, steps=10, reverse=False):
-        light_up_successive(steps, (0,0,0) reverse)
+        self.light_up_successive(steps, (0,0,0), reverse)
 
 def pixels_by_step(count,steps):
     fred=[int(float(count * x)/steps) for x in range(steps)]
@@ -429,8 +429,8 @@ if __name__ == "__main__":
     subset8 = Pixel_Section(pixels, 31, 10, step=2)
     subset9 = Pixel_Section(pixels, 51, 10, step=2)
     set6_do = subset6.light_up_successive(steps=run_for, colour=(0,0,200))
-    set7_do = subset7.light_up_successive(steps=run_for, colour=(0,0,200))
-    set8_do = subset8.light_up_successive(steps=run_for, colour=(200,0,0), reverse=True)
+    set7_do = subset7.light_up_successive(steps=run_for, colour=(0,0,200), reverse=True)
+    set8_do = subset8.light_up_successive(steps=run_for, colour=(200,0,0))
     set9_do = subset9.light_up_successive(steps=run_for, colour=(200,0,0), reverse=True)
     for i in range(run_for):
         print(i)
@@ -440,3 +440,28 @@ if __name__ == "__main__":
         set9_do.next()
         pixels.show()
         time.sleep(2)
+    #set6_do = subset6.go_out_successive(steps=run_for)
+    #set7_do = subset7.go_out_successive(steps=run_for, reverse=True)
+    #set8_do = subset8.go_out_successive(steps=run_for)
+    #set9_do = subset9.go_out_successive(steps=run_for, reverse=True)
+    #for i in range(run_for):
+    #    print(i)
+    #    set6_do.next()
+    #    set7_do.next()
+    #    set8_do.next()
+    #    set9_do.next()
+    #    pixels.show()
+    #    time.sleep(.7)
+    run_for=50
+    set6_do = subset6.rainbow_cycle_successive(steps=run_for,reverse=False)
+    set7_do = subset7.rainbow_cycle_successive(steps=run_for,reverse=True)
+    set8_do = subset8.rainbow_cycle_successive(steps=run_for,reverse=False)
+    set9_do = subset9.rainbow_cycle_successive(steps=run_for,reverse=True)
+    for i in range(run_for):
+        print(i)
+        set6_do.next()
+        set7_do.next()
+        set8_do.next()
+        set9_do.next()
+        pixels.show()
+        time.sleep(0.5)
