@@ -33,22 +33,29 @@ class Pixel_Section:
         self.index = [x + offset for x in range(0,string_length,step)]
 
     def rainbow_cycle_successive(self, steps=10, 
-                                 full_circle=256, reverse=False):
+                         full_wheel=256, arc_span=256,
+                         laps=1, reverse=False):
         clusters = pixels_by_step(self.length, steps)
         if reverse:
             clusters.reverse()
+        count = 0
         for cluster in clusters:
             # tricky math!
-            # we use each pixel as a fraction of the full full_circle-color wheel
-            # (thats the i * full_circle / slef.length part)
+            # we use each pixel as a fraction of the full full_wheel-color wheel
+            # (thats the i * full_wheel / slef.length part)
             # Then add in cluster which makes the colors go around per pixel
-            # the % full_circle is to make the wheel cycle around
+            # the % full_wheel is to make the wheel cycle around
+            pixel_locations = get_wheel_position(self.length, count, steps,
+                       laps=laps, full_wheel=full_wheel, arc_span=arc_span,
+                       reverse=reverse)
             for i in cluster:
-                pixel_no=i+self.offset
-                location = (i * full_circle // self.length) % full_circle
+                #pixel_no=i+self.offset
+                location = pixel_locations[i]
+                colour = wheel2(location, spread=full_wheel)
                 print("pixel no. = {0:3d} position {1:3d}".format(pixel_no, location))
-                self.pixels.set_pixel(pixel_no, wheel(location) )
+                self.pixels.set_pixel(self.index(i), colour )
             yield
+            count += 1
  
     def rainbow_cycle(self, steps=10,
                          full_wheel=256, arc_span=256,
@@ -71,25 +78,17 @@ class Pixel_Section:
             clusters.reverse()
         for cluster in clusters:
             for i in cluster:
-                #pixels.set_pixel(i+self.offset, Adafruit_WS2801.RGB_to_color(colour[0],colour[1],colour[2]) )
                 pixel_colour = Adafruit_WS2801.RGB_to_color(colour[0],
-                        colour[1],colour[2])
+                                                          colour[1],colour[2])
                 pixels.set_pixel(self.index[i], pixel_colour)
                 pixels.show()
             yield
 
     def go_out_successive(self, steps=10, reverse=False):
-        clusters = pixels_by_step(self.length, steps)
-        if reverse:
-            clusters.reverse()
-        for cluster in clusters:
-            for i in cluster:
-                pixels.set_pixel(i+self.offset, Adafruit_WS2801.RGB_to_color(0, 0, 0) )
-                pixels.show()
-            yield
+        light_up_successive(steps, (0,0,0) reverse)
 
 def pixels_by_step(count,steps):
-    fred=[int((float(count)/steps)*(x)) for x in range(steps)]
+    fred=[int(float(count * x)/steps) for x in range(steps)]
     fred.append(count)
     print (fred)
     list_out=[]
@@ -429,9 +428,9 @@ if __name__ == "__main__":
     subset7 = Pixel_Section(pixels, 50, 10, step=2)
     subset8 = Pixel_Section(pixels, 31, 10, step=2)
     subset9 = Pixel_Section(pixels, 51, 10, step=2)
-    set6_do = subset8.light_up_successive(steps=run_for, colour=(0,0,200))
-    set7_do = subset8.light_up_successive(steps=run_for, colour=(0,0,20))
-    set8_do = subset9.light_up_successive(steps=run_for, colour=(200,0,0), reverse=True)
+    set6_do = subset6.light_up_successive(steps=run_for, colour=(0,0,200))
+    set7_do = subset7.light_up_successive(steps=run_for, colour=(0,0,200))
+    set8_do = subset8.light_up_successive(steps=run_for, colour=(200,0,0), reverse=True)
     set9_do = subset9.light_up_successive(steps=run_for, colour=(200,0,0), reverse=True)
     for i in range(run_for):
         print(i)
