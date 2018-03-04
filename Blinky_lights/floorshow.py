@@ -1,6 +1,7 @@
 # Simple demo of of the WS2801/SPI-like addressable RGB LED lights.
 import time
 import RPi.GPIO as GPIO
+from random import randint
  
 # Import the WS2801 module.
 import Adafruit_WS2801
@@ -138,6 +139,38 @@ class Pixel_Section:
     def go_out_successive(self, steps=10, reverse=False):
         return self.light_up_successive(steps, (0,0,0), reverse)
 
+    def appear_from_end(self, color=(255, 0, 0), reverse=False):
+        pos = 0
+        jump = 1
+        start = 0
+        end = self.length -1
+        order = range(start,end,jump)
+        if reverse:
+            order.reverse()
+            jump =-1
+            start = self.length -1
+            end = 0
+        for i in order:
+            old_j = end
+            for j in (range(end, i-jump, 0 - jump)):
+                #pixels.clear()
+                # first set all pixels at the begin
+                #for k in range(start, i, jump):
+                #    pixels.set_pixel(self.index[k],
+                #        Adafruit_WS2801.RGB_to_color( color[0], color[1],
+                #                                      color[2] ))
+                pixels.set_pixel(self.index[old_j],
+                       Adafruit_WS2801.RGB_to_color( 0,0,0 ))
+                # set then the pixel at position j
+                pixels.set_pixel(self.index[j],
+                        Adafruit_WS2801.RGB_to_color( color[0], color[1],
+                                                      color[2] ))
+                pixels.show()
+                #print(j, old_j)
+                old_j = j
+                time.sleep(0.05)
+            yield
+
 def pixels_by_step(count,steps):
     ''' Takes the number of steps a pattern is going to be displayed for
         and calculates the number of pixels that need to be adjusted each
@@ -192,6 +225,10 @@ def wheel(pos, spread):
     else:
         pos -= int(2 * band)
         return Adafruit_WS2801.RGB_to_color(0, pos, int(band - pos))
+
+def get_random_colour(spread=360):
+    pos = randint(0,spread)
+    return wheel(pos, spread)
  
 def brightness_decrease(pixels, wait=0.01, step=1):
     for j in range(int(256 // step)):
@@ -219,19 +256,6 @@ def blink_color(pixels, blink_times=5, wait=0.5, color=(255,0,0)):
             time.sleep(0.08)
         time.sleep(wait)
  
-def appear_from_back(pixels, color=(255, 0, 0)):
-    pos = 0
-    for i in range(pixels.count()):
-        for j in reversed(range(i, pixels.count())):
-            pixels.clear()
-            # first set all pixels at the begin
-            for k in range(i):
-                pixels.set_pixel(k, Adafruit_WS2801.RGB_to_color( color[0], color[1], color[2] ))
-            # set then the pixel at position j
-            pixels.set_pixel(j, Adafruit_WS2801.RGB_to_color( color[0], color[1], color[2] ))
-            pixels.show()
-            time.sleep(0.02)
-
 def ping_pong(pixels, color1=(110, 50, 0), color2=(0, 0, 0), wait=0.05, repeat=5):
     pos = 0
     pixels.clear()
@@ -278,13 +302,13 @@ if __name__ == "__main__":
     pixels.clear()
     pixels.show()  # Make sure to call show() after changing any pixels!
  
-    run_for = 360
-    set1_do = r_window.rainbow_cycle(steps=run_for, laps=6)
-    set2_do = l_window.rainbow_cycle(steps=run_for, laps=6, reverse=True)
+    run_for = 720
+    set1_do = r_window.rainbow_cycle(steps=run_for, laps=12)
+    set2_do = l_window.rainbow_cycle(steps=run_for, laps=12, reverse=True)
     set3_do = r_window_edge.rainbow_cycle_successive(steps=run_for)
     set4_do = l_window_edge.rainbow_cycle_successive(steps=run_for, reverse=True)
-    snowman_1_do = snowman1.rainbow_cycle(steps=run_for, laps=12, arc_span=20)
-    snowman_2_do = snowman2.rainbow_cycle(steps=run_for, laps=12, arc_span=20,
+    snowman_1_do = snowman1.rainbow_cycle(steps=run_for, laps=24, arc_span=20)
+    snowman_2_do = snowman2.rainbow_cycle(steps=run_for, laps=24, arc_span=20,
                                           reverse=True)
     for i in range(run_for):
         #print(i)
@@ -297,6 +321,7 @@ if __name__ == "__main__":
         pixels.show()
         time.sleep(.05)
     time.sleep(2)
+
     run_for = 20
     set1_do = r_window.go_out_successive(steps=run_for)
     set2_do = l_window.go_out_successive(steps=run_for, reverse=True)
@@ -317,8 +342,10 @@ if __name__ == "__main__":
     time.sleep(2)
 
     run_for=360
-    snowman_1_do = snowman1.rainbow_cycle(steps=run_for, full_wheel=120, arc_span=30, laps=3)
-    snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120, arc_span=30, laps=3, reverse=True)
+    snowman_1_do = snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
+                                          arc_span=30, laps=3)
+    snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
+                                          arc_span=30, laps=3, reverse=True)
     for i in range(run_for):
     #    #print(i)
         snowman_1_do.next()
@@ -331,7 +358,8 @@ if __name__ == "__main__":
                                          arc_span=120, laps=3)
     snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
                                          arc_span=120, laps=3, reverse=True)
-    whole_window_do = whole_window.rainbow_cycle(steps=run_for, full_wheel=120, arc_span=120, laps=6)
+    whole_window_do = whole_window.rainbow_cycle(steps=run_for, full_wheel=120,
+                                                 arc_span=120, laps=6)
     for i in range(run_for):
     #    #print(i)
         snowman_1_do.next()
@@ -396,6 +424,56 @@ if __name__ == "__main__":
         l_window_d_do.next()
         pixels.show()
         time.sleep(.7)
+
+    for trips in range(3):
+        reverse = randint(0,1) == 1
+        colour = Adafruit_WS2801.color_to_RGB(get_random_colour(360))
+        run_for = whole_window.length
+        whole_window_do = whole_window.appear_from_end(color=colour,
+                                                       reverse=reverse)
+        snowman_1_do= snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
+                                             arc_span=10, laps=3)
+        snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
+                                             arc_span=10, laps=3, reverse=True)
+        for i in range(whole_window.length-1):
+            #print(i)
+            whole_window_do.next()
+            snowman_1_do.next()
+            snowman_2_do.next()
+            pixels.show()
+            time.sleep(0.1)
+
+    for trips in range(5):
+        run_for = r_window.length
+        reverse1 = randint(0,1) == 1
+        reverse2 = randint(0,1) == 1
+        colour1 = Adafruit_WS2801.color_to_RGB(get_random_colour(360))
+        colour2 = Adafruit_WS2801.color_to_RGB(get_random_colour(360))
+        r_window_do = r_window.appear_from_end(color=colour1,
+                                                   reverse=reverse1)
+        l_window_do = l_window.appear_from_end(color=colour2,
+                                                   reverse=reverse2)
+        snowman_1_do= snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
+                                             arc_span=20, laps=3)
+        snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
+                                             arc_span=20, laps=3, reverse=True)
+        for i in range(r_window.length-1):
+            #print(i)
+            r_window_do.next()
+            l_window_do.next()
+            snowman_1_do.next()
+            snowman_2_do.next()
+            pixels.show()
+            time.sleep(0.1)
+
+    run_for = 100
+    whole_window_do = whole_window.fade_to_black(steps=run_for)
+    for i in range(run_for):
+        #print(i)
+        whole_window_do.next()
+        pixels.show()
+        time.sleep(.7)
+
     #subset6 = Pixel_Section(pixels, 30, 20, step=1)
     #subset7 = Pixel_Section(pixels, 50, 20, step=1)
     #run_for=20
