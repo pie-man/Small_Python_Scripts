@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.7
 
 import ephem
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # DATA - in this case TLE for satellites of interest...
 suomi_npp_tle = ["SUOMI NPP",
@@ -14,10 +14,14 @@ iss_tle = ["ISS",
 
 def print_basics(body, observer):
     body.compute(observer)
-    print("From the vantage point of {0:s}:\n".format(observer.name))
-    print(" The next rise of {0:s} will be {1:}\n".format(body.name,body.rise_time))
-    print(" The next transition of {0:s} will be {1:}\n".format(body.name,body.transit_time))
-    print(" The next setting of {0:s} will be {1:}\n".format(body.name,body.set_time))
+    print("From the vantage point of {0:s}:\n"
+          .format(observer.name))
+    print(" The next rise of {0:s} will be {1:}"
+          .format(body.name,body.rise_time))
+    print(" The next transition of {0:s} will be {1:}"
+          .format(body.name,body.transit_time))
+    print(" The next setting of {0:s} will be {1:}\n"
+          .format(body.name,body.set_time))
 
 def create_an_observer(name, lattitude, longitude):
     observer = ephem.Observer()
@@ -30,7 +34,7 @@ if __name__ == '__main__':
     # create an 'observer' at the met office.
     met_office = create_an_observer("Met Office", '50.727323', '-3.474555')
     met_office.date = '2018/4/13 14:00'
-    met_office.date = datetime.now()
+    met_office.date = datetime.now()+ timedelta(hours=-2)
 
     #create a 'body' based on the TLE ofr a satellite.
     suomi_npp = ephem.readtle(*suomi_npp_tle)
