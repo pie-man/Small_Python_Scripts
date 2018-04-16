@@ -27,14 +27,44 @@ def create_an_observer(name, lattitude, longitude):
     observer = ephem.Observer()
     observer.name = name
     observer.long, observer.lat = longitude, lattitude
+    observer.date = ephem.now()
     return observer
 
+def create_list_of_angles(body, observer):
+    observer.date = ephem.now()
+    body.compute(observer)
+    start_time = body.rise_time
+    duration_time = body.transit_time
+    end_time = body.set_time
+    current_time = start_time
+    observer.date = current_time
+    body.compute(observer)
+    #print("    The current time is      ... {0:}".format(current_time))
+    #print("    The declination is     ..... {0:}".format(body.dec))
+    #print("    The right ascension is ..... {0:}".format(body.ra))
+    #print("    The azimuth is         ..... {0:}".format(body.az))
+    #print("    The altitude is        ..... {0:}".format(body.alt))
+    print("  @ {0:} it will be at {1:} degrees north and {2:} degrees above horizon.".format(current_time, body.az, body.alt))
+    #print("".format())
+    while current_time < end_time:
+        current_time = current_time + ephem.minute
+        observer.date = ephem.date(current_time)
+        body.compute(observer)
+        #print("    The current time is      ... {0:}".format(ephem.date(current_time)))
+        #print("    The declination is     ..... {0:}".format(body.dec))
+        #print("    The right ascension is ..... {0:}".format(body.ra))
+        #print("    The azimuth is         ..... {0:}".format(body.az))
+        #print("    The altitude is        ..... {0:}".format(body.alt))
+        print("  @ {0:} it will be at {1:} degrees north and {2:} degrees above horizon.".format(ephem.date(current_time), body.az, body.alt))
+    
 if __name__ == '__main__':
 
     # create an 'observer' at the met office.
     met_office = create_an_observer("Met Office", '50.727323', '-3.474555')
-    met_office.date = '2018/4/13 14:00'
-    met_office.date = datetime.now()+ timedelta(hours=-2)
+    #met_office.date = '2018/4/13 14:00'
+    #met_office.date = datetime.now() + timedelta(hours=-1)
+    #print ("Ephem's date stamp is ...     {0:}".format(ephem.now()))
+    #print ("Datetimes's date stamp is ... {0:}".format(met_office.date))
 
     #create a 'body' based on the TLE ofr a satellite.
     suomi_npp = ephem.readtle(*suomi_npp_tle)
@@ -47,3 +77,6 @@ if __name__ == '__main__':
     iss.compute(met_office)
 
     print_basics(iss, met_office)
+
+    
+    create_list_of_angles(iss, met_office)
