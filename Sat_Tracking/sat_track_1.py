@@ -5,32 +5,31 @@ from datetime import datetime, timedelta
 import urllib2
 import re
 
-# DATA - in this case TLE for satellites of interest...
-suomi_npp_tle = ["SUOMI NPP",
-       "1 37849U 11061A   18106.18442330  .00000010  00000-0  25684-4 0  9991",
-       "2 37849  98.7334  45.5038 0001382  59.2898  80.8941 14.19545053335072"]
-
-iss_tle = ["ISS",
-       "1 25544U 98067A   18103.52382522  .00025144  00000-0  38373-3 0  9995",
-       "2 25544  51.6440 341.0761 0002169 351.2480  69.1597 15.54280591108461"]
-
-# get TLEs from celestrak.com
+# get lists of TLEs from celestrak.com
 weather_sats_file = "http://celestrak.com/NORAD/elements/weather.txt"
 NOAA_sats_file = "http://celestrak.com/NORAD/elements/noaa.txt"
 GEOS_sats_file = "http://celestrak.com/NORAD/elements/goes.txt"
 Earth_Resources_sats_file = "http://celestrak.com/NORAD/elements/resource.txt"
 space_stations = "http://celestrak.com/NORAD/elements/stations.txt"
 
-def print_basics(body, observer):
+def print_basics(body, observer, time=ephem.now()):
+    observer.date = time
     body.compute(observer)
-    print("From the vantage point of {0:s}:\n"
-          .format(observer.name))
-    print(" The next rise of {0:s} will be {1:}"
-          .format(body.name,body.rise_time))
-    print(" The next transition of {0:s} will be {1:}"
-          .format(body.name,body.transit_time))
-    print(" The next setting of {0:s} will be {1:}\n"
-          .format(body.name,body.set_time))
+    
+    print("From the vantage point of {0:s} the next pass of {1:s}"
+          .format(observer.name, body.name) + 
+          " will be on {0:s}".format(ephem_time_to_datetime_string(
+               body.rise_time,'%d of %b %Y')))
+    print("rising @ {0:s}, transit @ {1:s} and set @ {2:s}\n"
+          .format(ephem_time_to_datetime_string(body.rise_time,'%H:%M'),
+                  ephem_time_to_datetime_string(body.transit_time,'%H:%M'),
+                  ephem_time_to_datetime_string(body.set_time,'%H:%M')))
+
+def ephem_time_to_datetime_string(ephem_time, format_str):
+    ephem_format = "%Y/%m/%d %H:%M:%S"
+    time = ephem.localtime(ephem_time)
+    #time = datetime.strptime(str(ephem_time), ephem_format)
+    return datetime.strftime(time, format_str)
 
 def create_an_observer(name, lattitude, longitude):
     observer = ephem.Observer()
@@ -52,72 +51,59 @@ def find_sat_in_list(satname, TLE_data):
              sat_TLE.append(line.strip())
              sat_TLE.append( TLE_data[index + 1].strip() )
              sat_TLE.append( TLE_data[index + 2].strip() )
-             print(sat_TLE)
              break
+    for line in sat_TLE:
+        print(line)
+    print("")
     return sat_TLE
     
 def create_list_of_angles(body, observer):
-    observer.date = ephem.now()
-    body.compute(observer)
-    start_time = body.rise_time
-    duration_time = body.transit_time
+    current_time = body.rise_time
     end_time = body.set_time
-    current_time = start_time
-    observer.date = current_time
-    body.compute(observer)
-    #print("    The current time is      ... {0:}".format(current_time))
-    #print("    The declination is     ..... {0:}".format(body.dec))
-    #print("    The right ascension is ..... {0:}".format(body.ra))
-    #print("    The azimuth is         ..... {0:}".format(body.az))
-    #print("    The altitude is        ..... {0:}".format(body.alt))
-    print("  @ {0:} it will be at {1:} degrees north and {2:} degrees above horizon.".format(current_time, body.az, body.alt))
-    #print("".format())
+    format_string = ("  @ {0:5s} it will be at {1:>11s} degrees north and " +
+                     " {2:>10s} degrees above horizon.")
     while current_time < end_time:
-        current_time = current_time + ephem.minute
         observer.date = ephem.date(current_time)
         body.compute(observer)
-        #print("    The current time is      ... {0:}".format(ephem.date(current_time)))
-        #print("    The declination is     ..... {0:}".format(body.dec))
-        #print("    The right ascension is ..... {0:}".format(body.ra))
-        #print("    The azimuth is         ..... {0:}".format(body.az))
-
-
-        #print("    The altitude is        ..... {0:}".format(body.alt))
-        print("  @ {0:} it will be at {1:} degrees north and {2:} degrees above horizon.".format(ephem.date(current_time), body.az, body.alt))
+        time = ephem_time_to_datetime_string(ephem.date(current_time), '%H:%M')
+        print(format_string.format(time, str(body.az), str(body.alt)))
+        current_time = current_time + ephem.minute
+    print("")
     
 if __name__ == '__main__':
 
     # create an 'observer' at the met office.
     met_office = create_an_observer("Met Office", '50.727323', '-3.474555')
-    #met_office.date = '2018/4/13 14:00'
-    #met_office.date = datetime.now() + timedelta(hours=-1)
+
     #print ("Ephem's date stamp is ...     {0:}".format(ephem.now()))
     #print ("Datetimes's date stamp is ... {0:}".format(met_office.date))
-
-    #create a 'body' based on the TLE ofr a satellite.
-    suomi_npp = ephem.readtle(*suomi_npp_tle)
-    suomi_npp.compute(met_office)
-
-    print_basics(suomi_npp, met_office)
-
-    #create a 'body' based on the TLE ofr a satellite.
-    iss = ephem.readtle(*iss_tle)
-    iss.compute(met_office)
-
-    print_basics(iss, met_office)
-
-    
-    create_list_of_angles(iss, met_office)
 
     sat_to_find = "SUOMI NPP"
 
     weather_sats_TLEs = get_TLEs_from_net(weather_sats_file)
     suomi_npp_tle = find_sat_in_list(sat_to_find, weather_sats_TLEs)
 
-    if suomi_npp is not None:
-        suomi_npp_2 = ephem.readtle(*suomi_npp_tle)
-        suomi_npp_2.compute(met_office)
+    space_stations_TLEs = get_TLEs_from_net(space_stations)
+    iss_tle = find_sat_in_list("ISS", space_stations_TLEs)
 
-        print_basics(suomi_npp_2, met_office)
+    #create a 'body' based on the TLE of a satellite.
+    if suomi_npp_tle is not []:
+        suomi_npp = ephem.readtle(*suomi_npp_tle)
+        suomi_npp.compute(met_office)
+
+        print_basics(suomi_npp, met_office)
+
+        create_list_of_angles(suomi_npp, met_office)
     else:
         print("Could not find suomi_npp in data provided")
+
+    #create a 'body' based on the TLE of the ISS.
+    if iss_tle:
+        iss = ephem.readtle(*iss_tle)
+        iss.compute(met_office)
+
+        print_basics(iss, met_office)
+
+        create_list_of_angles(iss, met_office)
+    else:
+        print("Could not find iss in data provided")
