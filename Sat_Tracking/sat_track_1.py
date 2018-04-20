@@ -7,8 +7,8 @@ import re
 
 # get lists of TLEs from celestrak.com
 weather_sats_file = "http://celestrak.com/NORAD/elements/weather.txt"
-NOAA_sats_file = "http://celestrak.com/NORAD/elements/noaa.txt"
-GEOS_sats_file = "http://celestrak.com/NORAD/elements/goes.txt"
+#NOAA_sats_file = "http://celestrak.com/NORAD/elements/noaa.txt"
+#GEOS_sats_file = "http://celestrak.com/NORAD/elements/goes.txt"
 Earth_Resources_sats_file = "http://celestrak.com/NORAD/elements/resource.txt"
 space_stations = "http://celestrak.com/NORAD/elements/stations.txt"
 
@@ -47,14 +47,14 @@ def find_sat_in_list(satname, TLE_data):
     sat_TLE = []
 
     for index, line in enumerate(TLE_data):
-         if re.search(satname, line, re.IGNORECASE):
-             sat_TLE.append(line.strip())
-             sat_TLE.append( TLE_data[index + 1].strip() )
-             sat_TLE.append( TLE_data[index + 2].strip() )
-             break
-    for line in sat_TLE:
-        print(line)
-    print("")
+        if re.search(satname, line, re.IGNORECASE):
+            sat_TLE.append(line.strip())
+            sat_TLE.append( TLE_data[index + 1].strip() )
+            sat_TLE.append( TLE_data[index + 2].strip() )
+            #for line in sat_TLE:
+            #    print(line)
+            #print("")
+            break
     return sat_TLE
     
 def create_list_of_angles(body, observer):
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     iss_tle = find_sat_in_list("ISS", space_stations_TLEs)
 
     #create a 'body' based on the TLE of a satellite.
-    if suomi_npp_tle is not []:
+    if suomi_npp_tle:
         suomi_npp = ephem.readtle(*suomi_npp_tle)
         suomi_npp.compute(met_office)
 
@@ -107,3 +107,55 @@ if __name__ == '__main__':
         create_list_of_angles(iss, met_office)
     else:
         print("Could not find iss in data provided")
+
+    sat_TLEs = []
+    sat_name_list = [
+                     "NOAA 15",
+                     "NOAA 18",
+                     "NOAA 19",
+                     "NOAA 20",
+                     "Suomi NPP",
+                     "AQUA",
+                     "TERRA",
+                     "METOP-A",
+                     "METOP-B",
+                     "FENGYUN 3A",
+                     "FENGYUN 3B",
+                    ]
+    data_sources = [(weather_sats_file,"weather_sats_file"),
+                    #(NOAA_sats_file,"NOAA_sats_file"),
+                    #(GEOS_sats_file,"GEOS_sats_file"),
+                    (Earth_Resources_sats_file, "Earth_Resources_sats_file"),
+                    (space_stations,"space_stations")]
+    sat_tles = {}
+    for source in data_sources:
+        TLEs =  get_TLEs_from_net(source[0])
+        print("In the source file {0:s} I found.....".format(source[1]))
+        for sat_name in sat_name_list:
+            tle = find_sat_in_list(sat_name, TLEs)
+            if tle:
+                print(   "... {0:s}".format(sat_name))
+                sat_tles[sat_name] = tle
+                #for line in tle:
+                #    print(line)
+                #print("")
+            #else:
+            #    print("Could not find {0:s} in data provided".format(sat_name))
+
+    next_pass = ephem.now() + (24 * ephem.hour)
+    for sat_name in sat_name_list:
+        print("Looking at : {0:s}".format(sat_name))
+        for line in sat_tles[sat_name]:
+            print(line)
+        sat_body = ephem.readtle(*sat_tles[sat_name])
+        met_office.date = ephem.now()
+        sat_body.compute(met_office)
+        print("{0:s} rises at {1:s}".format(sat_name,
+         ephem_time_to_datetime_string(sat_body.rise_time, '%Y/%m/%d %H:%M')))
+        if sat_body.rise_time < next_pass:
+            next_pass = sat_body.rise_time
+            next_sat = sat_name
+        print("")
+    print("The next body to track is {0:s} at {1:s}".format(next_sat,
+          ephem_time_to_datetime_string(ephem.date(next_pass), '%Y/%m/%d %H:%M')))
+        
