@@ -9,7 +9,7 @@ import Adafruit_GPIO.SPI as SPI
  
  
 # Configure the count of pixels:
-PIXEL_COUNT = 100
+PIXEL_COUNT = 50
  
 # Alternatively specify a hardware SPI connection on /dev/spidev0.0:
 SPI_PORT   = 0
@@ -26,6 +26,7 @@ class Pixel_Section:
         string_length = length * step
         if offset + string_length > max_pixels :
             print("Error : not enough pixels for that....")
+            print("Going from {0:}  to {1:} exceeds max {2:}".format(offset, offset + string_length, max_pixels ))
             string_length = max_pixels - offset
             length = string_length // step
         self.offset = offset
@@ -277,21 +278,21 @@ def ping_pong(pixels, color1=(110, 50, 0), color2=(0, 0, 0), wait=0.05, repeat=5
  
 if __name__ == "__main__":
     # Set up some basic 'shapes' to play with lights in
-    snowman1 = Pixel_Section(pixels, 98, 2)
-    snowman2 = Pixel_Section(pixels, 95, 2)
-    whole_window = Pixel_Section(pixels, 34, 32, step=1)
-    r_window = Pixel_Section(pixels, 34, 16, step=1)
-    l_window = Pixel_Section(pixels, 50, 16, step=1)
-    r_window_a = Pixel_Section(pixels, 34, 4, step=4)
-    r_window_b = Pixel_Section(pixels, 35, 4, step=4)
-    r_window_c = Pixel_Section(pixels, 36, 4, step=4)
-    r_window_d = Pixel_Section(pixels, 37, 4, step=4)
-    l_window_a = Pixel_Section(pixels, 50, 4, step=4)
-    l_window_b = Pixel_Section(pixels, 51, 4, step=4)
-    l_window_c = Pixel_Section(pixels, 52, 4, step=4)
-    l_window_d = Pixel_Section(pixels, 53, 4, step=4)
-    r_window_edge = Pixel_Section(pixels, 19, 15)
-    l_window_edge = Pixel_Section(pixels, 66, 15)
+    #snowman1 = Pixel_Section(pixels, 98, 2)
+    #snowman2 = Pixel_Section(pixels, 95, 2)
+    whole_window = Pixel_Section(pixels, 0, 50, step=1)
+    r_window = Pixel_Section(pixels, 40, 10, step=1)
+    l_window = Pixel_Section(pixels, 0, 10, step=1)
+    r_window_a = Pixel_Section(pixels, 41, 2, step=4)
+    r_window_b = Pixel_Section(pixels, 42, 2, step=4)
+    r_window_c = Pixel_Section(pixels, 43, 2, step=4)
+    r_window_d = Pixel_Section(pixels, 44, 2, step=4)
+    l_window_a = Pixel_Section(pixels, 1, 2, step=4)
+    l_window_b = Pixel_Section(pixels, 2, 2, step=4)
+    l_window_c = Pixel_Section(pixels, 3, 2, step=4)
+    l_window_d = Pixel_Section(pixels, 4, 2, step=4)
+    #r_window_edge = Pixel_Section(pixels, 19, 15)
+    #l_window_edge = Pixel_Section(pixels, 66, 15)
 
     red    = (200,   0,   0)
     green  = (  0, 200,   0)
@@ -305,19 +306,19 @@ if __name__ == "__main__":
     run_for = 720
     set1_do = r_window.rainbow_cycle(steps=run_for, laps=12)
     set2_do = l_window.rainbow_cycle(steps=run_for, laps=12, reverse=True)
-    set3_do = r_window_edge.rainbow_cycle_successive(steps=run_for)
-    set4_do = l_window_edge.rainbow_cycle_successive(steps=run_for, reverse=True)
-    snowman_1_do = snowman1.rainbow_cycle(steps=run_for, laps=24, arc_span=20)
-    snowman_2_do = snowman2.rainbow_cycle(steps=run_for, laps=24, arc_span=20,
-                                          reverse=True)
+    #set3_do = r_window_edge.rainbow_cycle_successive(steps=run_for)
+    #set4_do = l_window_edge.rainbow_cycle_successive(steps=run_for, reverse=True)
+    #snowman_1_do = snowman1.rainbow_cycle(steps=run_for, laps=24, arc_span=20)
+    #snowman_2_do = snowman2.rainbow_cycle(steps=run_for, laps=24, arc_span=20,
+    #                                      reverse=True)
     for i in range(run_for):
         #print(i)
         set1_do.next()
         set2_do.next()
-        set3_do.next()
-        set4_do.next()
-        snowman_1_do.next()
-        snowman_2_do.next()
+        #set3_do.next()
+        #set4_do.next()
+        #snowman_1_do.next()
+        #snowman_2_do.next()
         pixels.show()
         time.sleep(.05)
     time.sleep(2)
@@ -325,45 +326,45 @@ if __name__ == "__main__":
     run_for = 20
     set1_do = r_window.go_out_successive(steps=run_for)
     set2_do = l_window.go_out_successive(steps=run_for, reverse=True)
-    set3_do = r_window_edge.go_out_successive(steps=run_for)
-    set4_do = l_window_edge.go_out_successive(steps=run_for, reverse=True)
-    snowman_1_do = snowman1.go_out_successive(steps=run_for)
-    snowman_2_do = snowman1.go_out_successive(steps=run_for, reverse=True)
+    #set3_do = r_window_edge.go_out_successive(steps=run_for)
+    #set4_do = l_window_edge.go_out_successive(steps=run_for, reverse=True)
+    #snowman_1_do = snowman1.go_out_successive(steps=run_for)
+    #snowman_2_do = snowman1.go_out_successive(steps=run_for, reverse=True)
     for i in range(run_for):
         #print(i)
         set1_do.next()
         set2_do.next()
-        set3_do.next()
-        set4_do.next()
-        snowman_1_do.next()
-        snowman_2_do.next()
+        #set3_do.next()
+        #set4_do.next()
+        #snowman_1_do.next()
+        #snowman_2_do.next()
         pixels.show()
         time.sleep(.5)
     time.sleep(2)
 
     run_for=360
-    snowman_1_do = snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
-                                          arc_span=30, laps=3)
-    snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
-                                          arc_span=30, laps=3, reverse=True)
-    for i in range(run_for):
-    #    #print(i)
-        snowman_1_do.next()
-        snowman_2_do.next()
-        pixels.show()
-        time.sleep(.05)
+    #snowman_1_do = snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
+    #                                      arc_span=30, laps=3)
+    #snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
+    #                                      arc_span=30, laps=3, reverse=True)
+    #for i in range(run_for):
+    ##    #print(i)
+    #    snowman_1_do.next()
+    #    snowman_2_do.next()
+    #    pixels.show()
+    #    time.sleep(.05)
 
     run_for=360
-    snowman_1_do= snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
-                                         arc_span=120, laps=3)
-    snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
-                                         arc_span=120, laps=3, reverse=True)
+    #snowman_1_do= snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
+    #                                     arc_span=120, laps=3)
+    #snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
+    #                                     arc_span=120, laps=3, reverse=True)
     whole_window_do = whole_window.rainbow_cycle(steps=run_for, full_wheel=120,
                                                  arc_span=120, laps=6)
     for i in range(run_for):
     #    #print(i)
-        snowman_1_do.next()
-        snowman_2_do.next()
+        #snowman_1_do.next()
+        #snowman_2_do.next()
         whole_window_do.next()
         pixels.show()
         time.sleep(.05)
@@ -431,15 +432,15 @@ if __name__ == "__main__":
         run_for = whole_window.length
         whole_window_do = whole_window.appear_from_end(color=colour,
                                                        reverse=reverse)
-        snowman_1_do= snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
-                                             arc_span=10, laps=3)
-        snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
-                                             arc_span=10, laps=3, reverse=True)
+        #snowman_1_do= snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
+        #                                     arc_span=10, laps=3)
+        #snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
+        #                                     arc_span=10, laps=3, reverse=True)
         for i in range(whole_window.length-1):
             #print(i)
             whole_window_do.next()
-            snowman_1_do.next()
-            snowman_2_do.next()
+            #snowman_1_do.next()
+            #snowman_2_do.next()
             pixels.show()
             time.sleep(0.1)
 
@@ -453,16 +454,16 @@ if __name__ == "__main__":
                                                    reverse=reverse1)
         l_window_do = l_window.appear_from_end(color=colour2,
                                                    reverse=reverse2)
-        snowman_1_do= snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
-                                             arc_span=20, laps=3)
-        snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
-                                             arc_span=20, laps=3, reverse=True)
+        #snowman_1_do= snowman1.rainbow_cycle(steps=run_for, full_wheel=120,
+        #                                     arc_span=20, laps=3)
+        #snowman_2_do = snowman2.rainbow_cycle(steps=run_for, full_wheel=120,
+        #                                     arc_span=20, laps=3, reverse=True)
         for i in range(r_window.length-1):
             #print(i)
             r_window_do.next()
             l_window_do.next()
-            snowman_1_do.next()
-            snowman_2_do.next()
+            #snowman_1_do.next()
+            #snowman_2_do.next()
             pixels.show()
             time.sleep(0.1)
 
