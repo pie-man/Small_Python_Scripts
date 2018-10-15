@@ -10,6 +10,7 @@ import Adafruit_GPIO.SPI as SPI
  
 # Configure the count of pixels:
 PIXEL_COUNT = 50
+DEBUG=False
 
 def initialise_pixels(pixel_count):
     # Alternatively specify a hardware SPI connection on /dev/spidev0.0:
@@ -19,7 +20,7 @@ def initialise_pixels(pixel_count):
                  spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE),
                  gpio=GPIO)
     return pixels
- 
+
 def create_index(pixels, index_start, index_end, step=1):
     max_pixels=pixels.count()
     if index_start > max_pixels:
@@ -38,18 +39,44 @@ def get_state(pixels, index):
     active_pixels = len(index)
     current_state = []
     for i in range(active_pixels):
+        current_state.append(pixels.get_pixel(index[i]))
+    return current_state
+
+def get_state_rgb(pixels, index):
+    active_pixels = len(index)
+    current_state = []
+    for i in range(active_pixels):
         current_state.append(pixels.get_pixel_rgb(index[i]))
     return current_state
 
-def fade_to_state(pixels, index, new_state, steps=25, reverse=False):
+def set_state_rgb(pixels, index, rgb_state):
+    active_pixels = len(index)
+    if active_pixels != len(rgb_state):
+        print("Error in set_state_rgb : Length of states not consistent")
+    for i in range(active_pixels):
+        red_val, green_val, blue_val = rgb_state[i]
+        pixels.set_pixel(index[i],
+                Adafruit_WS2801.RGB_to_color( red_val, green_val, blue_val ))
+
+def set_state(pixels, index, state):
+    active_pixels = len(index)
+    if active_pixels != len(state):
+        print("Error in set_state : Length of states not consistent")
+    for i in range(active_pixels):
+        pixels.set_pixel(index[i],state[i])
+
+def fade_to_state_rgb(pixels, index, new_state, steps=25, reverse=False):
     active_pixels = len(index)
     if active_pixels != len(new_state):
-        print("Error in fade_to_state : Length of states not consistent")
+        print("Error in fade_to_state_rgb : Length of states not consistent")
         return
-    old_state = get_state(pixels, index)
+    old_state = get_state_rgb(pixels, index)
     for step in range(steps):
         scale_out = int(100*( steps - (step + 1.0) ) / steps)
         scale_in  = 100 - scale_out
+        if DEBUG:
+            print("Scale_out = {0:3d}, scale_in = {1:3d}".format(scale_out, scale_in))
+        temp_state=[]
         for i in range(active_pixels):
             old_r, old_g, old_b = old_state[i]
             new_r, new_g, new_b = new_state[i]
@@ -57,23 +84,25 @@ def fade_to_state(pixels, index, new_state, steps=25, reverse=False):
                    ((old_r * scale_out + new_r * scale_in) // 100) ,
                    ((old_g * scale_out + new_g * scale_in) // 100) ,
                    ((old_b * scale_out + new_b * scale_in) // 100) )
-        #print("step {0:3d} : r{1:3d} g{2:3d} b{3:3d}".format(step, cur_r, cur_g, cur_b))
+            temp_state.append((cur_r, cur_g, cur_b))
             pixels.set_pixel(index[i],
                     Adafruit_WS2801.RGB_to_color( cur_r, cur_g, cur_b ))
+        if DEBUG:
+            print(temp_state[0:5])
         yield
 
-def fade_to_color(pixels, index, color=(0, 0, 0), steps=25, reverse=False):
+def fade_to_color_rgb(pixels, index, color=(0, 0, 0), steps=25, reverse=False):
     active_pixels = len(index)
     new_state = []
     for i in range(active_pixels):
         new_state.append(color)
-    return fade_to_state(pixels, index, new_state, steps)
+    return fade_to_state_rgb(pixels, index, new_state, steps)
  
 def fade_to_black(pixels, index, dummy_attr, steps=25, reverse=False):
-    return fade_to_color(pixels, index, color=(0, 0, 0), steps=steps)
+    return fade_to_color_rgb(pixels, index, color=(0, 0, 0), steps=steps)
 
 def fade_to_white(pixels, index, dummy_attr, steps=25, reverse=False):
-    return fade_to_color(pixels, index, color=(255, 255, 255), steps=steps)
+    return fade_to_color_rgb(pixels, index, color=(255, 255, 255), steps=steps)
 
 def rotate_state(pixels, index, skip=1, steps=25, reverse=False):
     active_pixels = len(index)
@@ -84,17 +113,25 @@ def rotate_state(pixels, index, skip=1, steps=25, reverse=False):
         new_state = ( current_state[0+skip:active_pixels] +
                       current_state[0:(skip - active_pixels)% active_pixels] )
         for i in range(active_pixels):
-            pixels.set_pixel(index[i],
-                    Adafruit_WS2801.RGB_to_color( *new_state[i] ))
-            current_state = new_state
-        #print('rotate state, iter = {0:3d}'.format(step))
+            pixels.set_pixel(index[i], new_state[i] )
+        current_state = new_state
+        if DEBUG:
+            print('rotate state, iter = {0:3d}'.format(step))
         yield
+
+def make_rainbow_state_rgb(index):
+    active_pixels = len(index)
+    rainbow_state = []
+    for i in range(active_pixels):
+        colour = wheel_rgb(i, spread=active_pixels+1)
+        rainbow_state.append(colour)
+    return rainbow_state
 
 def make_rainbow_state(index):
     active_pixels = len(index)
     rainbow_state = []
     for i in range(active_pixels):
-        colour = wheel(i, spread=active_pixels)
+        colour = wheel(i, spread=active_pixels+1)
         rainbow_state.append(colour)
     return rainbow_state
 
@@ -104,15 +141,6 @@ def make_colour_state(index, rgb_colour):
     for i in range(active_pixels):
         colour_state.append(rgb_colour)
     return colour_state
-
-def set_state(pixels, index, state):
-    active_pixels = len(index)
-    if active_pixels != len(state):
-        print("Error in set_state : Length of states not consistent")
-    for i in range(active_pixels):
-        red_val, green_val, blue_val = state[i]
-        pixels.set_pixel(index[i],
-                Adafruit_WS2801.RGB_to_color( red_val, green_val, blue_val ))
 
 class Pixel_Section:
     def __init__(self, leds, offset, length, step=1):
@@ -125,61 +153,6 @@ class Pixel_Section:
         self.pixels = leds
         self.index = [x for x in range(offset,string_end,step)]
         self.length = len(self.index)
-
-    def get_state(self):
-        current_state=[]
-        for i in range(self.length):
-            current_state.append(self.pixels.get_pixel_rgb(self.index[i]))
-        return current_state
-
-    def record_state(self):
-        self.state = get_state()
-
-    def fade_to_state(self, new_state, steps=25):
-        if self.length != len(new_state):
-            print("Error in fade_to_state : Length of states not consistent")
-            return
-        old_state = self.get_state()
-        for step in range(steps):
-            scale_out = int(100*( steps - (step + 1.0) ) / steps)
-            scale_in  = 100 - scale_out
-            for i in range(self.length):
-                old_r, old_g, old_b = old_state[i]
-                new_r, new_g, new_b = new_state[i]
-                cur_r, cur_g, cur_b = (
-                       ((old_r * scale_out + new_r * scale_in) // 100) ,
-                       ((old_g * scale_out + new_g * scale_in) // 100) ,
-                       ((old_b * scale_out + new_b * scale_in) // 100) )
-            #print("step {0:3d} : r{1:3d} g{2:3d} b{3:3d}".format(step, cur_r, cur_g, cur_b))
-                pixels.set_pixel(self.index[i],
-                        Adafruit_WS2801.RGB_to_color( cur_r, cur_g, cur_b ))
-            yield
-
-    def fade_to_color(self, color=(0, 0, 0), steps=25):
-        new_state = []
-        for i in range(self.length):
-            new_state.append(color)
-        return self.fade_to_state(new_state, steps)
- 
-    def fade_to_black(self, steps=25):
-        return self.fade_to_color(color=(0, 0, 0), steps=steps)
- 
-    def fade_to_white(self, steps=25):
-        return self.fade_to_color(color=(255, 255, 255), steps=steps)
- 
-    def rotate_state(self, steps=25, skip=1, reverse=False):
-        current_state = self.get_state()
-        if reverse:
-            skip = 0 - skip
-        for step in range(steps):
-            new_state = ( current_state[0+skip:self.length] +
-                          current_state[0:(skip - self.length)% self.length] )
-            for i in range(self.length):
-                pixels.set_pixel(self.index[i],
-                        Adafruit_WS2801.RGB_to_color( *new_state[i] ))
-                current_state = new_state
-            #print('rotate state, iter = {0:3d}'.format(step))
-            yield
 
     def rainbow_cycle_successive(self, steps=10, 
                          full_wheel=256, arc_span=256,
@@ -308,29 +281,28 @@ def get_wheel_position(pixel_length, loop_index, steps_total,
 # Define an alternative function to interpolate between different hues.
 # This function defines 'spread' separate colours
 def wheel(pos, spread):
-    pos = pos % spread
-    band = spread/3.0
-    if pos < band:
-        return Adafruit_WS2801.RGB_to_color(pos, int(band - pos), 0)
-    elif pos < (2 * band):
-        pos -= int(band)
-        return Adafruit_WS2801.RGB_to_color(int(band - pos), 0, pos)
-    else:
-        pos -= int(2 * band)
-        return Adafruit_WS2801.RGB_to_color(0, pos, int(band - pos))
+    (red, green, blue) = wheel_rgb(pos, spread)
+    return Adafruit_WS2801.RGB_to_color(red, green, blue)
 
 def wheel_rgb(pos, spread):
     pos = pos % spread
     band = spread/3.0
+    def scale_val(val):
+        mult = 255.0 / band
+        return int(val * mult)
     if pos < band:
-        return (pos, int(band - pos), 0)
+        return (scale_val(pos), scale_val(int(band - pos)), 0)
     elif pos < (2 * band):
         pos -= int(band)
-        return (int(band - pos), 0, pos)
+        return (scale_val(int(band - pos)), 0, scale_val(pos))
     else:
         pos -= int(2 * band)
-        return (0, pos, int(band - pos))
+        return (0, scale_val(pos), scale_val(int(band - pos)))
 
+def get_random_colour_rgb(spread=360):
+    pos = randint(0,spread)
+    return wheel_rgb(pos, spread)
+ 
 def get_random_colour(spread=360):
     pos = randint(0,spread)
     return wheel(pos, spread)
@@ -388,7 +360,7 @@ class bundle:
         self.functions = []
         self.run=True
     def add_function(self, function, index, attribute=None, reverse=False):
-        self.functions.append(function(self.pixels, index, attribute, self.steps, reverse))
+        self.functions.append(function(self.pixels, index, attribute, steps=self.steps, reverse=reverse))
     def run_bundle(self):
         if self.run:
             for i in range(self.steps):
