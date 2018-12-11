@@ -6,23 +6,24 @@ import pixel_strings_fncs as q
 # Configure the count of pixels:
 PIXEL_COUNT = 46
 
+# Define the 'index' of the three rings of pixels to be ued globally
+TOP    = range(37, 46)
+MIDDLE = range(22, 33)
+BOTTOM = range(18)
 
 def set_tree():
-    '''Insert docstring here'''
-    top = range(37, 46)
-    middle = range(22, 33)
-    bottom = range(18)
+    '''Set the three rings of the tree to display a static
+       loop of rainbow colours'''
 
-    pixels = q.initialise_pixels(PIXEL_COUNT)
-
-    top_state = q.make_rainbow_state(top)
-    middle_state = q.make_rainbow_state(middle)
-    bottom_state = q.make_rainbow_state(bottom)
-    q.set_state(pixels, top, top_state)
-    q.set_state(pixels, middle, middle_state)
-    q.set_state(pixels, bottom, bottom_state)
+    top_state = q.make_rainbow_state(TOP)
+    middle_state = q.make_rainbow_state(MIDDLE)
+    bottom_state = q.make_rainbow_state(BOTTOM)
+    q.set_state(pixels, TOP, top_state)
+    q.set_state(pixels, MIDDLE, middle_state)
+    q.set_state(pixels, BOTTOM, bottom_state)
     pixels.show()
 
 
 if __name__ == '__main__':
+    pixels = q.initialise_pixels(PIXEL_COUNT)
     set_tree()
