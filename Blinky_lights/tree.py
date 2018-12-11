@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Simple demo of of the WS2801/SPI-like addressable RGB LED lights.
+import time
 import pixel_strings_fncs as q
 
 # Configure the count of pixels:
