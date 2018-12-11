@@ -23,7 +23,18 @@ def set_tree():
     q.set_state(pixels, BOTTOM, bottom_state)
     pixels.show()
 
+def say_something():
+    print("hello")
 
 if __name__ == '__main__':
     pixels = q.initialise_pixels(PIXEL_COUNT)
     set_tree()
+    function_list = [
+            set_tree,
+            say_something
+            ]
+    for function in function_list:
+        function()
+        time.sleep(10)
+    pixels.clear()
+    pixels.show()
