@@ -8,6 +8,7 @@ from w1thermsensor import W1ThermSensor
 # To get w1thermsensor :
 # git clone https://github.com/timofurrer/w1thermsensor.git && cd w1thermsensor
 # sudo python setup.py install
+#
 
 reading_interval = 60 # seconds between readings.
 
